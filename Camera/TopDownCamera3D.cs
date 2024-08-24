@@ -6,16 +6,16 @@ namespace ClownMeister.UnityEssentials.Camera
     public class TopDownCamera3D : MonoBehaviour
     {
         [Tooltip("Determines if the camera module is active.")]
-        public bool active = false;
+        public bool active = true;
 
         [Tooltip("Movement speed of the camera.")]
         [SerializeField]
-        private float moveSpeed = 5f;
+        private float moveSpeed = 10f;
 
         [Tooltip("Interpolation speed when transitioning the camera position.")]
         [SerializeField]
-        private float interpolateSpeed = 0.1f;
-        private float _interpolater;
+        private float interpolateSpeed = 1f;
+        private float _interpolateStep;
 
         private Vector3 _targetPosition, _oldTargetPosition, _startingTransitionPosition;
 
@@ -53,14 +53,14 @@ namespace ClownMeister.UnityEssentials.Camera
                 _startingTransitionPosition = transform.position;
             }
 
-            _interpolater = Vector3.SqrMagnitude(transform.position - _targetPosition) * interpolateSpeed;
+            _interpolateStep = Vector3.SqrMagnitude(transform.position - _targetPosition) * interpolateSpeed;
 
             if (transform.position == _targetPosition)
             {
                 return;
             }
 
-            transform.position = Vector3.Lerp(_startingTransitionPosition, _targetPosition, _interpolater);
+            transform.position = Vector3.Lerp(_startingTransitionPosition, _targetPosition, _interpolateStep);
         }
     }
 }
