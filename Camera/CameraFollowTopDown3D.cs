@@ -1,6 +1,5 @@
 ﻿using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace ClownMeister.UnityEssentials.Camera
 {
@@ -13,38 +12,40 @@ namespace ClownMeister.UnityEssentials.Camera
         [SerializeField] private float offsetMultiplier = .5f;
 
         public Vector3 offset;
-        public Vector3 offsetMin = new(0, 5, -5);
-        public Vector3 offsetMax = new(0, 30, -15);
+        public Vector3 offsetMin = new Vector3(0, 5, -5);
+        public Vector3 offsetMax = new Vector3(0, 30, -15);
 
-        public void OnScroll(InputValue inputValue)
+        private void Update()
         {
-            float scrollY = inputValue.Get<Vector2>().y;
-
-            if (scrollY == 0) return;
-            float scrollOffset = this.offsetMultiplier + -scrollY * this.zoomSensitivity;
-            this.offsetMultiplier = scrollOffset switch
-            {
-                < 0 => 0,
-                > 1 => 1,
-                _ => scrollOffset
-            };
+            HandleScrollInput();
         }
 
-        private void FixedUpdate()
+        private void LateUpdate()
         {
-            this.offset = GetOffset();
-            Vector3 desiredPosition = this.target.position + this.offset;
-            Vector3 lerpedPosition = Vector3.Lerp(transform.position, desiredPosition, this.smoothSpeed);
+            offset = GetOffset();
+            Vector3 desiredPosition = target.position + offset;
+            Vector3 lerpedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed);
             transform.position = lerpedPosition;
 
-            // transform.LookAt(this.target); //TODO: stuttering fix
-            Quaternion targetRotation = Quaternion.LookRotation(this.target.transform.position - transform.position);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, this.rotationSpeed * Time.deltaTime);
+            transform.LookAt(target);
+            Quaternion targetRotation = Quaternion.LookRotation(target.transform.position - transform.position);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        }
+
+        private void HandleScrollInput()
+        {
+            float scrollY = Input.GetAxis("Mouse ScrollWheel");
+
+            if (!(Math.Abs(scrollY) > 0.01f))
+                return;
+
+            float scrollOffset = offsetMultiplier - scrollY * zoomSensitivity;
+            offsetMultiplier = Mathf.Clamp(scrollOffset, 0, 1);
         }
 
         private Vector3 GetOffset()
         {
-            return (this.offsetMax - this.offsetMin) * this.offsetMultiplier + this.offsetMin;
+            return (offsetMax - offsetMin) * offsetMultiplier + offsetMin;
         }
     }
 }

@@ -13,21 +13,21 @@ namespace ClownMeister.UnityEssentials.Camera
             public bool z;
         }
 
-        [SerializeField]public FreezeRotation freezeRotation;
+        // [SerializeField]public FreezeRotation freezeRotation;
         private UnityEngine.Camera _mainCamera;
 
         public float damping = 3;
         private void Start()
         {
-            this._mainCamera = UnityEngine.Camera.main;
+            _mainCamera = UnityEngine.Camera.main;
         }
 
         private void Update()
         {
-            Vector3 camPosition = this._mainCamera.transform.position;
+            Vector3 camPosition = _mainCamera.transform.position;
             Vector3 lookPos = camPosition - transform.position;
             Quaternion rotation = Quaternion.LookRotation(-lookPos);
-            Quaternion smoothRotation = Quaternion.Slerp(transform.rotation, rotation, Time.deltaTime * this.damping);
+            Quaternion smoothRotation = Quaternion.Slerp(transform.rotation, rotation, Time.deltaTime * damping);
             transform.rotation = smoothRotation;
 
             //TODO: Fix freeze

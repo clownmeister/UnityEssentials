@@ -34,13 +34,13 @@ public class FlyCamera : MonoBehaviour {
 			Focused = true;
 
 		// Physics
-		this._velocity = Vector3.Lerp( this._velocity, Vector3.zero, dampingCoefficient * Time.deltaTime );
-		transform.position += this._velocity * Time.deltaTime;
+		_velocity = Vector3.Lerp( _velocity, Vector3.zero, dampingCoefficient * Time.deltaTime );
+		transform.position += _velocity * Time.deltaTime;
 	}
 
 	void UpdateInput() {
 		// Position
-		this._velocity += GetAccelerationVector() * Time.deltaTime;
+		_velocity += GetAccelerationVector() * Time.deltaTime;
 
 		// Rotation
 		Vector2 mouseDelta = lookSensitivity * new Vector2( Input.GetAxis( "Mouse X" ), -Input.GetAxis( "Mouse Y" ) );
