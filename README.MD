@@ -4,8 +4,7 @@ Just some classes I commonly use in Unity. Feel free to explore.
 
 ## Requirements
 
-Required unity packages:
-* none so far but planning to use maybe new unity input system
+Tested on Unity 6 but should work on other versions without issues I bet.
 
 ## Installation
 
