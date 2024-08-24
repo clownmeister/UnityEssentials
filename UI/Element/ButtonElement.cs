@@ -25,7 +25,7 @@ namespace ClownMeister.UnityEssentials.UI.Element
 
                 if (ve is not ButtonElement button) throw new Exception("Invalid element type provided");
 
-                button.Data = this.data.GetValueFromBag(bag, cc);
+                button.Data = data.GetValueFromBag(bag, cc);
                 focusable.defaultValue = true;
             }
         }
