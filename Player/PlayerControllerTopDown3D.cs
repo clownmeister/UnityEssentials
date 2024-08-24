@@ -20,9 +20,6 @@ namespace ClownMeister.UnityEssentials.Player
         [SerializeField] private LayerMask jumpRayMask;
         [SerializeField] private float rayLength;
 
-        [SerializeField] private float scrollSensitivity = 1;
-        [SerializeField] private float scrollSensitivityController = .005f;
-
         private Rigidbody _body;
         private Collider _bodyCollider;
 

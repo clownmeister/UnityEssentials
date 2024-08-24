@@ -8,59 +8,84 @@ namespace ClownMeister.UnityEssentials.Camera
         [Tooltip("Determines if the camera module is active.")]
         public bool active = true;
 
+        [Header("Movement")]
         [Tooltip("Movement speed of the camera.")]
         [SerializeField]
-        private float moveSpeed = 10f;
+        private float moveSpeed = 30f;
 
         [Tooltip("Interpolation speed when transitioning the camera position.")]
         [SerializeField]
-        private float interpolateSpeed = 1f;
-        private float _interpolateStep;
+        private float interpolateSpeed = 20f;
 
-        private Vector3 _targetPosition, _oldTargetPosition, _startingTransitionPosition;
+        [Header("Zoom")]
+        [Tooltip("Sensitivity of the zoom functionality.")]
+        [SerializeField]
+        //TODO: Remove or add to settings later
+        private float zoomSensitivity = 1f;
+
+        [Tooltip("Minimum zoom level (closer to the ground).")]
+        [SerializeField]
+        private float minZoom = 5f;
+
+        [Tooltip("Maximum zoom level (farther from the ground).")]
+        [SerializeField]
+        private float maxZoom = 30f;
+
+        [Tooltip("Speed at which the camera zooms in and out.")]
+        [SerializeField]
+        private float zoomSpeed = 20f;
+
+        private UnityEngine.Camera _camera;
+
+        private Vector3 _targetPosition;
 
         private void Start()
         {
-            Vector3 position = transform.position;
-
-            _startingTransitionPosition = position;
-            _oldTargetPosition = position;
-            _targetPosition = position;
+            _targetPosition = transform.position;
+            _camera = GetComponent<UnityEngine.Camera>();
         }
 
         private void Update()
         {
             if (!active) return;
 
+            HandleMovement();
+            HandleZoom();
+
+            // Smoothly transition to the new target position
+            transform.position = Vector3.Lerp(transform.position, _targetPosition, Time.deltaTime * interpolateSpeed);
+        }
+
+        private void HandleMovement()
+        {
             float x = Input.GetAxis("Horizontal");
             float z = Input.GetAxis("Vertical");
 
-            Move(new Vector3(x, 0, z));
-        }
+            Vector3 direction = new Vector3(x, 0, z);
 
-        private void Move(Vector3 direction)
-        {
-            if (Mathf.Abs(direction.x + direction.z) > 1)
+            if (direction.magnitude > 1)
             {
-                direction = direction.normalized;
+                direction.Normalize();
             }
 
             _targetPosition += direction * (moveSpeed * Time.deltaTime);
+        }
 
-            if (_targetPosition != _oldTargetPosition)
+        private void HandleZoom()
+        {
+            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            if (!(Mathf.Abs(scroll) > 0.01f)) return;
+            Vector3 zoomDirection = transform.forward * (scroll * zoomSensitivity * zoomSpeed);
+            Vector3 potentialPosition = _targetPosition + zoomDirection;
+
+            // Clamp the Y position to ensure the camera stays within desired vertical bounds
+            float clampedY = Mathf.Clamp(potentialPosition.y, minZoom, maxZoom);
+
+            // If clampedY is different from the potential Y position, don't apply further movement
+            if (Mathf.Approximately(clampedY, potentialPosition.y))
             {
-                _oldTargetPosition = _targetPosition;
-                _startingTransitionPosition = transform.position;
+                _targetPosition = new Vector3(potentialPosition.x, clampedY, potentialPosition.z);
             }
-
-            _interpolateStep = Vector3.SqrMagnitude(transform.position - _targetPosition) * interpolateSpeed;
-
-            if (transform.position == _targetPosition)
-            {
-                return;
-            }
-
-            transform.position = Vector3.Lerp(_startingTransitionPosition, _targetPosition, _interpolateStep);
         }
     }
 }
