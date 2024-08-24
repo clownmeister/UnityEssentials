@@ -3,7 +3,8 @@ using UnityEngine;
 
 namespace ClownMeister.UnityEssentials.Camera
 {
-    public class CameraFollowTopDown3D : MonoBehaviour
+    [RequireComponent(typeof(UnityEngine.Camera))]
+    public class TopDownFollowCamera3D : MonoBehaviour
     {
         public Transform target;
         public float smoothSpeed = .13f;

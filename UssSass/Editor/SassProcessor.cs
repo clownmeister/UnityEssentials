@@ -20,7 +20,8 @@ namespace ClownMeister.UssSass.Editor
             IEnumerable<string> files = importedAssets
                 .Where(filePath => filePath.Split('.').Length > 1 && TargetExtensions.Contains(filePath.Split(".")[1].ToLower()));
 
-            foreach (string filePath in files) {
+            foreach (string filePath in files)
+            {
                 Process process = new()
                 {
                     StartInfo = new ProcessStartInfo

@@ -2,7 +2,7 @@
 
 namespace ClownMeister.UnityEssentials.Gizmo
 {
-    public class GizmoUtils
+    public static class GizmoArrow
     {
         public static void DrawArrow(Vector3 pos, Vector3 direction, float arrowHeadLength = 0.5f, float arrowHeadAngle = 20.0f)
         {

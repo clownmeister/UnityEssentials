@@ -6,17 +6,11 @@ namespace ClownMeister.UnityEssentials.Camera
     [ExecuteInEditMode]
     public class Billboard : MonoBehaviour
     {
-        [Serializable]public struct FreezeRotation
-        {
-            public bool x;
-            public bool y;
-            public bool z;
-        }
+
+        public float damping = 3;
 
         // [SerializeField]public FreezeRotation freezeRotation;
         private UnityEngine.Camera _mainCamera;
-
-        public float damping = 3;
         private void Start()
         {
             _mainCamera = UnityEngine.Camera.main;
@@ -37,6 +31,13 @@ namespace ClownMeister.UnityEssentials.Camera
             // if (!this.freezeRotation.y) frozenRotation.y = smoothRotation.y;
             // if (!this.freezeRotation.z) frozenRotation.z = smoothRotation.z;
             // transform.Rotate(frozenRotation);
+        }
+
+        [Serializable] public struct FreezeRotation
+        {
+            public bool x;
+            public bool y;
+            public bool z;
         }
     }
 }
