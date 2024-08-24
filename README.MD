@@ -9,6 +9,6 @@ Required unity packages:
 
 ## Installation
 
-* Create ClownMeister folder in your unity project.
-* Clone this repository
-* Done
+1) Create ClownMeister folder in your scripts folder in unity project. (optional but works best with Rider IDE namespace hinting)
+1) Clone this repository.
+1) Done
