@@ -28,9 +28,9 @@ namespace ClownMeister.UnityEssentials.UI
                 fontSize = Mathf.RoundToInt(DefaultFontSize * Mathf.Min(Screen.width / DefaultInitialResolutionWidth, Screen.height / DefaultInitialResolutionHeight))
             };
 
-            GUILayout.BeginArea(new Rect((Screen.width - buttonWidth) / 2, (Screen.height - buttonHeight) / 2, buttonWidth, buttonHeight));
+            // GUILayout.BeginArea(new Rect((Screen.width - buttonWidth) / 2, (Screen.height - buttonHeight) / 2, buttonWidth, buttonHeight));
             bool result = GUILayout.Button(text, buttonStyle, GUILayout.Width(buttonWidth), GUILayout.Height(buttonHeight));
-            GUILayout.EndArea();
+            // GUILayout.EndArea();
 
             return result;
         }
@@ -51,9 +51,9 @@ namespace ClownMeister.UnityEssentials.UI
             GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
             buttonStyle.fontSize = Mathf.RoundToInt(DefaultFontSize * Mathf.Min(widthScale, heightScale));
 
-            GUILayout.BeginArea(new Rect((Screen.width - buttonWidth) / 2, (Screen.height - buttonHeight) / 2, buttonWidth, buttonHeight));
+            // GUILayout.BeginArea(new Rect((Screen.width - buttonWidth) / 2, (Screen.height - buttonHeight) / 2, buttonWidth, buttonHeight));
             bool result = GUILayout.Button(text, buttonStyle, GUILayout.Width(buttonWidth), GUILayout.Height(buttonHeight));
-            GUILayout.EndArea();
+            // GUILayout.EndArea();
 
             return result;
         }
@@ -66,9 +66,9 @@ namespace ClownMeister.UnityEssentials.UI
                 fontSize = DefaultFontSize
             };
 
-            GUILayout.BeginArea(new Rect((Screen.width - width) / 2, (Screen.height - height) / 2, width, height));
+            // GUILayout.BeginArea(new Rect((Screen.width - width) / 2, (Screen.height - height) / 2, width, height));
             bool result = GUILayout.Button(text, buttonStyle, GUILayout.Width(width), GUILayout.Height(height));
-            GUILayout.EndArea();
+            // GUILayout.EndArea();
 
             return result;
         }
