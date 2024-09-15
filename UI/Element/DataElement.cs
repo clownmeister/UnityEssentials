@@ -8,8 +8,10 @@ namespace ClownMeister.UnityEssentials.UI.Element
     {
         public string Data { get; set; }
 
+        [Obsolete("Obsolete")]
         public new class UxmlFactory : UxmlFactory<DataElement, UxmlTraits> { }
 
+        [Obsolete("Obsolete")]
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             private readonly UxmlStringAttributeDescription data = new() { name = "data", defaultValue = "" };
