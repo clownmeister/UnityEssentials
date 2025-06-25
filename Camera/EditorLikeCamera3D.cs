@@ -18,7 +18,10 @@ namespace ClownMeister.UnityEssentials.Camera
         [SerializeField] private float smoothTime = 0.1f;
         [SerializeField] private float panSpeed = 0.7f;
         [SerializeField] private float pitchClamp = 90f;
+        [SerializeField] private bool collectiveControl = true;
 
+        private InputAction ascendAction;
+        private InputAction descendAction;
         private InputAction moveAction;
         private InputAction lookAction;
         private InputAction scrollAction;
@@ -65,6 +68,9 @@ namespace ClownMeister.UnityEssentials.Camera
             panDeltaAction = new InputAction("PanDelta", InputActionType.Value, "<Mouse>/delta");
             panDeltaAction.performed += OnPanDelta;
             panDeltaAction.canceled += OnPanDelta;
+            
+            ascendAction = new InputAction("Ascend", InputActionType.Button, "<Keyboard>/space");
+            descendAction = new InputAction("Descend", InputActionType.Button, "<Keyboard>/leftCtrl");
         }
 
         private void OnEnable()
@@ -74,6 +80,8 @@ namespace ClownMeister.UnityEssentials.Camera
             scrollAction.Enable();
             setPivotAction.Enable();
             panDeltaAction.Enable();
+            ascendAction.Enable();
+            descendAction.Enable();
         }
 
         private void OnDisable()
@@ -83,6 +91,8 @@ namespace ClownMeister.UnityEssentials.Camera
             scrollAction.Disable();
             setPivotAction.Disable();
             panDeltaAction.Disable();
+            ascendAction.Disable();
+            descendAction.Disable();
         }
 
         private void LateUpdate()
@@ -97,8 +107,14 @@ namespace ClownMeister.UnityEssentials.Camera
 
         private void HandleMovement()
         {
-            // Convert input to world-space direction and smooth
-            var inputDir = new Vector3(moveInput.x, 0f, moveInput.y);
+            // Convert input to a world-space direction and smooth
+            var vertical = 0f;
+            if (collectiveControl)
+            {
+                if (ascendAction.IsPressed()) vertical += 1f;
+                if (descendAction.IsPressed()) vertical -= 1f;
+            }
+            var inputDir = new Vector3(moveInput.x, vertical, moveInput.y);
             if (Keyboard.current != null && Keyboard.current.shiftKey.isPressed) inputDir *= fastModifier;
             Vector3 targetPos = transform.position + transform.TransformDirection(inputDir) * (moveSpeed * Time.deltaTime);
             transform.position = Vector3.SmoothDamp(transform.position, targetPos, ref moveVelocity, smoothTime);
