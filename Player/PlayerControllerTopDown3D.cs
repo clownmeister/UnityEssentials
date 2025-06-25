@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace ClownMeister.UnityEssentials.Player
 {
@@ -20,66 +21,84 @@ namespace ClownMeister.UnityEssentials.Player
         [SerializeField] private LayerMask jumpRayMask;
         [SerializeField] private float rayLength;
 
-        private Rigidbody _body;
-        private Collider _bodyCollider;
+        private Rigidbody body;
+        private Collider bodyCollider;
 
-        private bool _canJump;
+        private Vector2 inputVector;
+        private bool jump;
+        private Vector3 mousePosition;
+        private float nextJump;
+        private bool canJump;
 
-        private Vector2 _inputVector;
-        private bool _jump;
-        private Vector3 _mousePosition;
-        private float _nextJump;
+        private InputAction moveAction;
+        private InputAction jumpAction;
+        private InputAction mousePosAction;
 
         private void Awake()
         {
-            _body = GetComponent<Rigidbody>();
-            _bodyCollider = GetComponent<CapsuleCollider>();
+            body = GetComponent<Rigidbody>();
+            bodyCollider = GetComponent<CapsuleCollider>();
+
+            moveAction = new InputAction("Move", InputActionType.Value);
+            moveAction.AddCompositeBinding("2DVector")
+                .With("Up", "<Keyboard>/w")
+                .With("Down", "<Keyboard>/s")
+                .With("Left", "<Keyboard>/a")
+                .With("Right", "<Keyboard>/d");
+
+            jumpAction = new InputAction("Jump", InputActionType.Button, "<Keyboard>/space");
+            mousePosAction = new InputAction("MousePosition", InputActionType.Value, "<Pointer>/position");
+        }
+
+        private void OnEnable()
+        {
+            moveAction.Enable();
+            jumpAction.Enable();
+            mousePosAction.Enable();
+        }
+
+        private void OnDisable()
+        {
+            moveAction.Disable();
+            jumpAction.Disable();
+            mousePosAction.Disable();
         }
 
         private void Start()
         {
-            _nextJump = 0;
-            _canJump = false;
+            nextJump = 0;
+            canJump = false;
         }
 
         private void Update()
         {
             HandleInput();
 
-            if (_jump)
-            {
+            if (jump)
                 Jump();
-            }
         }
 
         private void FixedUpdate()
         {
-            Vector3 targetVector = new Vector3(_inputVector.x, 0, _inputVector.y);
+            var targetVector = new Vector3(inputVector.x, 0f, inputVector.y);
             Vector3 movementVector = MoveTowardTarget(targetVector);
 
             if (rotateTowardMouse)
-            {
                 RotateFromMouseVector();
-            }
             else
-            {
                 RotateTowardMovementVector(movementVector);
-            }
         }
 
         private void HandleInput()
         {
-            float h = Input.GetAxis("Horizontal");
-            float v = Input.GetAxis("Vertical");
-            _inputVector = new Vector2(h, v);
-
-            _mousePosition = Input.mousePosition;
-            _jump = Input.GetAxis("Jump") > 0;
+            inputVector = moveAction.ReadValue<Vector2>();
+            jump = jumpAction.IsPressed();
+            mousePosition = mousePosAction.ReadValue<Vector2>();
         }
 
         private void RotateFromMouseVector()
         {
-            Ray ray = mainCamera.ScreenPointToRay(_mousePosition);
+            Ray ray = mainCamera.ScreenPointToRay(mousePosition);
 
             if (!Physics.Raycast(ray, out RaycastHit hitInfo, 300f)) return;
 
@@ -92,40 +111,43 @@ namespace ClownMeister.UnityEssentials.Player
         {
             float speed = movementSpeed * Time.deltaTime;
 
-            targetVector = Quaternion.Euler(0, mainCamera.gameObject.transform.rotation.eulerAngles.y, 0) * targetVector;
+            targetVector = Quaternion.Euler(0, mainCamera.transform.eulerAngles.y, 0) * targetVector;
             Vector3 targetPosition = transform.position + targetVector * speed;
             transform.position = targetPosition;
+
             return targetVector;
         }
 
         private void RotateTowardMovementVector(Vector3 movementDirection)
         {
             if (movementDirection.magnitude == 0) return;
+
             Quaternion rotation = Quaternion.LookRotation(movementDirection);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, rotation, rotationSpeed);
         }
 
         private void Jump()
         {
-            if (_nextJump > Time.time) return;
-            if (!_canJump) CheckGroundStatus();
-            if (!_canJump) return;
+            if (nextJump > Time.time) return;
+            if (!canJump) CheckGroundStatus();
+            if (!canJump) return;
 
-            _canJump = false;
-            _nextJump = Time.time + jumpCooldown;
-            _body.AddForce(0, jumpHeight * _body.mass, 0, ForceMode.Impulse);
+            canJump = false;
+            nextJump = Time.time + jumpCooldown;
+            body.AddForce(Vector3.up * (jumpHeight * body.mass), ForceMode.Impulse);
         }
 
         private void CheckGroundStatus()
         {
-            Vector3 rayPos = new Vector3(transform.position.x, _bodyCollider.bounds.min.y + 0.05f, transform.position.z);
-            if (!Physics.Raycast(new Ray(rayPos, Vector3.down), out RaycastHit hit, rayLength, jumpRayMask))
+            var rayPos = new Vector3(transform.position.x, bodyCollider.bounds.min.y + 0.05f, transform.position.z);
+
+            if (!Physics.Raycast(rayPos, Vector3.down, out RaycastHit hit, rayLength, jumpRayMask))
             {
-                _canJump = false;
+                canJump = false;
                 return;
             }
 
-            _canJump = hit.collider;
+            canJump = hit.collider;
         }
     }
 }

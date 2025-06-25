@@ -1,86 +1,130 @@
 ﻿using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace ClownMeister.UnityEssentials.Camera
 {
     [RequireComponent(typeof(UnityEngine.Camera))]
     public class FlyCamera : MonoBehaviour
     {
-        public float acceleration = 50; // how fast you accelerate
-        public float accSprintMultiplier = 4; // how much faster you go when "sprinting"
-        public float lookSensitivity = 1; // mouse look sensitivity
-        public float dampingCoefficient = 5; // how quickly you break to a halt after you stop your input
-        public bool focusOnEnable = true; // whether or not to focus and lock cursor immediately on enable
+        [Header("Movement")]
+        public float acceleration = 50f;
+        public float accSprintMultiplier = 4f;
 
-        Vector3 _velocity; // current velocity
+        [Header("Rotation")]
+        public float lookSensitivity = 1f;
 
-        static bool Focused
+        [Header("Damping")]
+        public float dampingCoefficient = 5f;
+
+        [Header("Cursor")]
+        public bool focusOnEnable = true;
+
+        private Vector3 velocity;
+
+        private InputAction moveAction;
+        private InputAction lookAction;
+        private InputAction sprintAction;
+        private InputAction upAction;
+        private InputAction downAction;
+        private InputAction escapeAction;
+        private InputAction clickAction;
+
+        private static bool Focused
         {
             get => Cursor.lockState == CursorLockMode.Locked;
             set
             {
                 Cursor.lockState = value ? CursorLockMode.Locked : CursorLockMode.None;
-                Cursor.visible = value == false;
+                Cursor.visible = !value;
             }
         }
 
-        void Update()
+        private void Awake()
         {
-            // Input
-            if (Focused)
-                UpdateInput();
-            else if (Input.GetMouseButtonDown(0))
+            moveAction = new InputAction("Move", InputActionType.Value);
+            moveAction.AddCompositeBinding("2DVector")
+                .With("Up", "<Keyboard>/w")
+                .With("Down", "<Keyboard>/s")
+                .With("Left", "<Keyboard>/a")
+                .With("Right", "<Keyboard>/d");
+
+            lookAction = new InputAction("Look", InputActionType.Value, "<Pointer>/delta");
+
+            sprintAction = new InputAction("Sprint", InputActionType.Button, "<Keyboard>/leftShift");
+            upAction = new InputAction("Up", InputActionType.Button, "<Keyboard>/space");
+            downAction = new InputAction("Down", InputActionType.Button, "<Keyboard>/leftCtrl");
+            escapeAction = new InputAction("Escape", InputActionType.Button, "<Keyboard>/escape");
+            clickAction = new InputAction("Click", InputActionType.Button, "<Mouse>/leftButton");
+        }
+
+        private void OnEnable()
+        {
+            moveAction.Enable();
+            lookAction.Enable();
+            sprintAction.Enable();
+            upAction.Enable();
+            downAction.Enable();
+            escapeAction.Enable();
+            clickAction.Enable();
+
+            if (focusOnEnable)
                 Focused = true;
-
-            // Physics
-            _velocity = Vector3.Lerp(_velocity, Vector3.zero, dampingCoefficient * Time.deltaTime);
-            transform.position += _velocity * Time.deltaTime;
         }
 
-        void OnEnable()
+        private void OnDisable()
         {
-            if (focusOnEnable) Focused = true;
+            moveAction.Disable();
+            lookAction.Disable();
+            sprintAction.Disable();
+            upAction.Disable();
+            downAction.Disable();
+            escapeAction.Disable();
+            clickAction.Disable();
+
+            Focused = false;
         }
 
-        void OnDisable() => Focused = false;
-
-        void UpdateInput()
+        private void Update()
         {
-            // Position
-            _velocity += GetAccelerationVector() * Time.deltaTime;
+            if (Focused)
+            {
+                UpdateInput();
+            }
+            else if (clickAction.WasPressedThisFrame())
+            {
+                Focused = true;
+            }
 
-            // Rotation
-            Vector2 mouseDelta = lookSensitivity * new Vector2(Input.GetAxis("Mouse X"), -Input.GetAxis("Mouse Y"));
-            Quaternion rotation = transform.rotation;
+            velocity = Vector3.Lerp(velocity, Vector3.zero, dampingCoefficient * Time.deltaTime);
+            transform.position += velocity * Time.deltaTime;
+        }
+
+        private void UpdateInput()
+        {
+            Vector3 accel = GetAccelerationVector();
+            velocity += accel * Time.deltaTime;
+
+            Vector2 mouseDelta = lookAction.ReadValue<Vector2>() * lookSensitivity;
             Quaternion horiz = Quaternion.AngleAxis(mouseDelta.x, Vector3.up);
-            Quaternion vert = Quaternion.AngleAxis(mouseDelta.y, Vector3.right);
-            transform.rotation = horiz * rotation * vert;
+            Quaternion vert = Quaternion.AngleAxis(-mouseDelta.y, Vector3.right);
+            transform.rotation = horiz * transform.rotation * vert;
 
-            // Leave cursor lock
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (escapeAction.WasPressedThisFrame())
                 Focused = false;
         }
 
-        Vector3 GetAccelerationVector()
+        private Vector3 GetAccelerationVector()
         {
-            Vector3 moveInput = default;
+            var move = moveAction.ReadValue<Vector2>();
+            var dir = new Vector3(move.x, 0, move.y);
 
-            void AddMovement(KeyCode key, Vector3 dir)
-            {
-                if (Input.GetKey(key))
-                    moveInput += dir;
-            }
+            if (upAction.IsPressed()) dir += Vector3.up;
+            if (downAction.IsPressed()) dir += Vector3.down;
 
-            AddMovement(KeyCode.W, Vector3.forward);
-            AddMovement(KeyCode.S, Vector3.back);
-            AddMovement(KeyCode.D, Vector3.right);
-            AddMovement(KeyCode.A, Vector3.left);
-            AddMovement(KeyCode.Space, Vector3.up);
-            AddMovement(KeyCode.LeftControl, Vector3.down);
-            Vector3 direction = transform.TransformVector(moveInput.normalized);
+            Vector3 worldDir = transform.TransformDirection(dir.normalized);
+            float speed = sprintAction.IsPressed() ? acceleration * accSprintMultiplier : acceleration;
 
-            if (Input.GetKey(KeyCode.LeftShift))
-                return direction * (acceleration * accSprintMultiplier); // "sprinting"
-            return direction * acceleration; // "walking"
+            return worldDir * speed;
         }
     }
 }

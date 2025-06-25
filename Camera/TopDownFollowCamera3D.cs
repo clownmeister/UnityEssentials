@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace ClownMeister.UnityEssentials.Camera
 {
@@ -7,14 +8,32 @@ namespace ClownMeister.UnityEssentials.Camera
     public class TopDownFollowCamera3D : MonoBehaviour
     {
         public Transform target;
-        public float smoothSpeed = .13f;
+        public float smoothSpeed = 0.13f;
         public float rotationSpeed = 5f;
-        public float zoomSensitivity = 1;
-        [SerializeField] private float offsetMultiplier = .5f;
+        public float zoomSensitivity = 1f;
+
+        [SerializeField] private float offsetMultiplier = 0.5f;
 
         public Vector3 offset;
         public Vector3 offsetMin = new Vector3(0, 5, -5);
         public Vector3 offsetMax = new Vector3(0, 30, -15);
+
+        private InputAction scrollAction;
+
+        private void Awake()
+        {
+            scrollAction = new InputAction("Scroll", InputActionType.Value, "<Mouse>/scroll");
+        }
+
+        private void OnEnable()
+        {
+            scrollAction.Enable();
+        }
+
+        private void OnDisable()
+        {
+            scrollAction.Disable();
+        }
 
         private void Update()
         {
@@ -29,15 +48,14 @@ namespace ClownMeister.UnityEssentials.Camera
             transform.position = lerpedPosition;
 
             transform.LookAt(target);
-            Quaternion targetRotation = Quaternion.LookRotation(target.transform.position - transform.position);
+            Quaternion targetRotation = Quaternion.LookRotation(target.position - transform.position);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
 
         private void HandleScrollInput()
         {
-            float scrollY = Input.GetAxis("Mouse ScrollWheel");
-
-            if (!(Math.Abs(scrollY) > 0.01f))
+            float scrollY = scrollAction.ReadValue<Vector2>().y;
+            if (Math.Abs(scrollY) < 0.01f)
                 return;
 
             float scrollOffset = offsetMultiplier - scrollY * zoomSensitivity;

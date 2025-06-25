@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace ClownMeister.UnityEssentials.Camera
 {
@@ -9,40 +10,47 @@ namespace ClownMeister.UnityEssentials.Camera
         public bool active = true;
 
         [Header("Movement")]
-        [Tooltip("Movement speed of the camera.")]
-        [SerializeField]
-        private float moveSpeed = 30f;
-
-        [Tooltip("Interpolation speed when transitioning the camera position.")]
-        [SerializeField]
-        private float interpolateSpeed = 20f;
+        [SerializeField] private float moveSpeed = 30f;
+        [SerializeField] private float interpolateSpeed = 20f;
 
         [Header("Zoom")]
-        [Tooltip("Sensitivity of the zoom functionality.")]
-        [SerializeField]
-        //TODO: Remove or add to settings later
-        private float zoomSensitivity = 1f;
+        [SerializeField] private float zoomSensitivity = 1f;
+        [SerializeField] private float minZoom = 5f;
+        [SerializeField] private float maxZoom = 30f;
+        [SerializeField] private float zoomSpeed = 20f;
 
-        [Tooltip("Minimum zoom level (closer to the ground).")]
-        [SerializeField]
-        private float minZoom = 5f;
+        private Vector3 targetPosition;
 
-        [Tooltip("Maximum zoom level (farther from the ground).")]
-        [SerializeField]
-        private float maxZoom = 30f;
+        private InputAction moveAction;
+        private InputAction scrollAction;
 
-        [Tooltip("Speed at which the camera zooms in and out.")]
-        [SerializeField]
-        private float zoomSpeed = 20f;
+        private void Awake()
+        {
+            moveAction = new InputAction("Move", InputActionType.Value);
+            moveAction.AddCompositeBinding("2DVector")
+                .With("Up", "<Keyboard>/w")
+                .With("Down", "<Keyboard>/s")
+                .With("Left", "<Keyboard>/a")
+                .With("Right", "<Keyboard>/d");
 
-        private UnityEngine.Camera _camera;
+            scrollAction = new InputAction("Scroll", InputActionType.Value, "<Mouse>/scroll");
+        }
 
-        private Vector3 _targetPosition;
+        private void OnEnable()
+        {
+            moveAction.Enable();
+            scrollAction.Enable();
+        }
+
+        private void OnDisable()
+        {
+            moveAction.Disable();
+            scrollAction.Disable();
+        }
 
         private void Start()
         {
-            _targetPosition = transform.position;
-            _camera = GetComponent<UnityEngine.Camera>();
+            targetPosition = transform.position;
         }
 
         private void Update()
@@ -52,39 +60,32 @@ namespace ClownMeister.UnityEssentials.Camera
             HandleMovement();
             HandleZoom();
 
-            // Smoothly transition to the new target position
-            transform.position = Vector3.Lerp(transform.position, _targetPosition, Time.deltaTime * interpolateSpeed);
+            transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * interpolateSpeed);
         }
 
         private void HandleMovement()
         {
-            float x = Input.GetAxis("Horizontal");
-            float z = Input.GetAxis("Vertical");
+            var input = moveAction.ReadValue<Vector2>();
+            var direction = new Vector3(input.x, 0f, input.y);
 
-            Vector3 direction = new Vector3(x, 0, z);
-
-            if (direction.magnitude > 1)
-            {
+            if (direction.magnitude > 1f)
                 direction.Normalize();
-            }
 
-            _targetPosition += direction * (moveSpeed * Time.deltaTime);
+            targetPosition += direction * (moveSpeed * Time.deltaTime);
         }
 
         private void HandleZoom()
         {
-            float scroll = Input.GetAxis("Mouse ScrollWheel");
-            if (!(Mathf.Abs(scroll) > 0.01f)) return;
+            float scroll = scrollAction.ReadValue<Vector2>().y;
+            if (Mathf.Abs(scroll) < 0.01f) return;
+
             Vector3 zoomDirection = transform.forward * (scroll * zoomSensitivity * zoomSpeed);
-            Vector3 potentialPosition = _targetPosition + zoomDirection;
+            Vector3 potentialPosition = targetPosition + zoomDirection;
 
-            // Clamp the Y position to ensure the camera stays within desired vertical bounds
             float clampedY = Mathf.Clamp(potentialPosition.y, minZoom, maxZoom);
-
-            // If clampedY is different from the potential Y position, don't apply further movement
             if (Mathf.Approximately(clampedY, potentialPosition.y))
             {
-                _targetPosition = new Vector3(potentialPosition.x, clampedY, potentialPosition.z);
+                targetPosition = new Vector3(potentialPosition.x, clampedY, potentialPosition.z);
             }
         }
     }
