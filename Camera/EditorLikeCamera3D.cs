@@ -13,12 +13,16 @@ namespace ClownMeister.UnityEssentials.Camera
         [Header("Speeds")]
         [SerializeField] private float moveSpeed = 50f;
         [SerializeField] private float fastModifier = 4f;
-        [SerializeField] private float rotationSpeed = 10f;
-        [SerializeField] private float zoomSpeed = 20f;
+        [SerializeField] private float rotationSpeed = 5f;
+        [SerializeField] private float zoomSpeed = 80f;
         [SerializeField] private float smoothTime = 0.1f;
         [SerializeField] private float panSpeed = 0.7f;
         [SerializeField] private float pitchClamp = 90f;
+        [Tooltip("If true, enables helicopter-style 'collective' controls. Spacebar will ascend and Left Ctrl will descend, allowing for free vertical movement. If false, vertical movement is disabled.")]
         [SerializeField] private bool collectiveControl = true;
+        [Header("Initialization")]
+        [Tooltip("How long to wait after the scene loads before accepting input. Prevents camera jumps on startup.")]
+        [SerializeField] private float inputActivationDelay = 0.2f;
 
         private InputAction ascendAction;
         private InputAction descendAction;
@@ -75,6 +79,9 @@ namespace ClownMeister.UnityEssentials.Camera
 
         private void OnEnable()
         {
+            // We now enable input after a delay in Start() to prevent input accumulation during scene load.
+            // StartCoroutine(EnableInputAfterDelay(inputActivationDelay));
+            /*
             moveAction.Enable();
             lookAction.Enable();
             scrollAction.Enable();
@@ -82,6 +89,13 @@ namespace ClownMeister.UnityEssentials.Camera
             panDeltaAction.Enable();
             ascendAction.Enable();
             descendAction.Enable();
+            */
+        }
+
+        private void Start()
+        {
+            // Start a coroutine to enable input after a short delay.
+            StartCoroutine(EnableInputAfterDelay(inputActivationDelay));
         }
 
         private void OnDisable()
@@ -95,17 +109,27 @@ namespace ClownMeister.UnityEssentials.Camera
             descendAction.Disable();
         }
 
-        private void LateUpdate()
+        private void Update()
         {
-            HandleMovement();
-            HandlePanning();
+            // Apply rotation directly. This is simpler and more performant.
+            // The subsequent position calculations will use this new orientation.
             HandleRotation();
-            HandleZoom();
+
+            // Calculate positional displacements for movement, panning, and zooming based on the new orientation.
+            Vector3 moveDisplacement = CalculateMovementDisplacement();
+            Vector3 panDisplacement = CalculatePanDisplacement();
+            Vector3 zoomDisplacement = CalculateZoomDisplacement();
+
+            // Aggregate all positional changes to determine the final target position.
+            Vector3 targetPosition = transform.position + moveDisplacement + panDisplacement + zoomDisplacement;
+            
+            // Smoothly interpolate only the position towards its target.
+            transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref moveVelocity, smoothTime);
             
             Dd($"MoveInput: {moveInput}, LookInput: {lookInput}, ScrollInput: {scrollInput}");
         }
 
-        private void HandleMovement()
+        private Vector3 CalculateMovementDisplacement()
         {
             // Convert input to a world-space direction and smooth
             var vertical = 0f;
@@ -116,23 +140,24 @@ namespace ClownMeister.UnityEssentials.Camera
             }
             var inputDir = new Vector3(moveInput.x, vertical, moveInput.y);
             if (Keyboard.current != null && Keyboard.current.shiftKey.isPressed) inputDir *= fastModifier;
-            Vector3 targetPos = transform.position + transform.TransformDirection(inputDir) * (moveSpeed * Time.deltaTime);
-            transform.position = Vector3.SmoothDamp(transform.position, targetPos, ref moveVelocity, smoothTime);
+            
+            // Return the displacement vector for this frame.
+            return transform.TransformDirection(inputDir) * (moveSpeed * Time.deltaTime);
         }
 
-        private void HandlePanning()
+        private Vector3 CalculatePanDisplacement()
         {
             // Check if middle mouse button is pressed and there's mouse movement
             if (Mouse.current == null || !Mouse.current.middleButton.isPressed || panMouseDelta == Vector2.zero)
             {
-                return;
+                return Vector3.zero;
             }
 
             Vector3 rightMovement = transform.right * (-panMouseDelta.x * panSpeed);
             Vector3 upMovement = transform.up * (-panMouseDelta.y * panSpeed);
 
-            // Apply the panning movement
-            transform.position += (rightMovement + upMovement) * Time.deltaTime;
+            // Return the panning displacement
+            return (rightMovement + upMovement) * Time.deltaTime;
         }
 
         private void HandleRotation()
@@ -173,9 +198,9 @@ namespace ClownMeister.UnityEssentials.Camera
             }
         }
 
-        private void HandleZoom()
+        private Vector3 CalculateZoomDisplacement()
         {
-            if (Mathf.Approximately(scrollInput, 0f)) return;
+            if (Mathf.Approximately(scrollInput, 0f)) return Vector3.zero;
             float scrollAmount = -scrollInput * zoomSpeed * Time.deltaTime;
             if (Keyboard.current != null && Keyboard.current.shiftKey.isPressed) scrollAmount *= fastModifier;
 
@@ -230,9 +255,23 @@ namespace ClownMeister.UnityEssentials.Camera
                 Dd($"Zoom direction: {directionToCamera} | Scroll amount: {scrollAmount}");
             }
 
-            transform.position += zoomDisplacement;
+            return zoomDisplacement;
         }
 
+        private System.Collections.IEnumerator EnableInputAfterDelay(float delay)
+        {
+            // Wait for the specified delay.
+            yield return new WaitForSeconds(delay);
+
+            // Now, enable all the input actions.
+            moveAction.Enable();
+            lookAction.Enable();
+            scrollAction.Enable();
+            setPivotAction.Enable();
+            panDeltaAction.Enable();
+            ascendAction.Enable();
+            descendAction.Enable();
+        }
         private void SetPivot(ref Vector3 pivot)
         {
             if (!UnityEngine.Camera.main)

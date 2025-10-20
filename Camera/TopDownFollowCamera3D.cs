@@ -18,6 +18,7 @@ namespace ClownMeister.UnityEssentials.Camera
 
         [Tooltip("The current zoom level, from 0 (min) to 1 (max).")]
         [SerializeField, Range(0f, 1f)] private float zoomLevel = 0.5f;
+        public float ZoomLevel => zoomLevel;
 
         [Tooltip("The calculated offset from the target. Read-only.")]
         public Vector3 offset;
